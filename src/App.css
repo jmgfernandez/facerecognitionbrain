@@ -2,7 +2,19 @@
   text-align: center;
 }
 
-.App-logo {
+.center {
+  display: flex;
+  justify-content: center;
+}
+
+.particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+}
+
+/* .App-logo {
   height: 40vmin;
   pointer-events: none;
 }
@@ -35,4 +47,4 @@
   to {
     transform: rotate(360deg);
   }
-}
+} */
