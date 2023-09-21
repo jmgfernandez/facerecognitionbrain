@@ -53,8 +53,25 @@ class App extends Component {
       box: {},
       route: 'signin',
       // keeps track of where we are on the page
-      isSignedIn: false
+      isSignedIn: false,
+      user: {
+            id: '',
+            name: '',
+            email: '',
+            entries: 0,
+            joined: ''
+      }
     }
+  }
+
+  loadUser = (data) => {
+    this.setState({user: {
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          entries: data.entries,
+          joined: data.joined
+    }})
   }
 
   calculateFaceLocation = (data) => {
@@ -78,15 +95,31 @@ class App extends Component {
     this.setState({input: event.target.value});
   }
 
-  onButtonSubmit = () => {
+  onPictureSubmit = () => {
     this.setState({imageUrl: this.state.input});
     
     const MODEL_ID = 'face-detection';
 
     fetch("https://api.clarifai.com/v2/models/" + MODEL_ID + "/outputs", returnClarifaiRequestOptions(this.state.input))
-          .then(response => response.json())
+          .then(response => {
+            if (response) {
+                fetch('http://localhost:3000/image', {
+                  method: 'put',
+                  headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify({
+                      id: this.state.user.id
+                  })
+                })
+                .then(resp => resp.json())
+                .then(count => {
+                  this.setState(Object.assign(this.state.user, { entries: count })) 
+                }) 
+            }
+            return response.json()
+          })
           .then(result => this.displayFaceBox(this.calculateFaceLocation(result)))
           .catch(error => console.log('error', error));
+          
   }
 
   onRouteChange = (route) => {
@@ -99,21 +132,21 @@ class App extends Component {
   }
 
   render() {
-    const { isSignedIn, imageUrl, route, box } = this.state;
+    const { isSignedIn, imageUrl, route, box, user: { name, entries } } = this.state;
     return (
       <div className="App">
         <ParticlesBg className='particle' type="cobweb" num={150} color='#ffffff' bg={true} />
         <Navigation onRouteChange={this.onRouteChange} isSignedIn={isSignedIn}/>
         { route === 'home' ? 
         <div><Logo />
-        <Rank />
-        <ImageLinkForm onInputChange={this.onInputChange} onButtonSubmit={this.onButtonSubmit}/>
+        <Rank name={name} entries={entries} />
+        <ImageLinkForm onInputChange={this.onInputChange} onPictureSubmit={this.onPictureSubmit}/>
         <FaceRecognition box={box} imageUrl={imageUrl} /> 
         </div>
         : (
             route === 'signin'|| route === 'signout'
-            ? <Signin onRouteChange={this.onRouteChange} />
-            : <Register onRouteChange={this.onRouteChange} /> 
+            ? <Signin onRouteChange={this.onRouteChange} loadUser={this.loadUser} />
+            : <Register onRouteChange={this.onRouteChange} loadUser={this.loadUser} /> 
           ) }
       </div>
     );
